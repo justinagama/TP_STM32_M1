@@ -1,60 +1,5 @@
 #include "stm32l476xx.h"
-const int N =20;
-unsigned int cycle[20] = {0,8,12,4,6,2,3,1};
-volatile uint8_t index_cycle = 0;
-volatile uint8_t index_recep = 0;
-uint32_t f_clk = 4000000;
-
-
-volatile uint8_t length_cycle = 8;
-volatile uint8_t octet = 0;
-volatile uint16_t period_s = 240;
-volatile uint16_t MAX_period_s = 960;
-volatile uint16_t MIN_period_s =60;
-
-void config_gpio_pb(void);
-
-void TIM2_config(void);
-void TIM2_IRQHandler(void);
-void IT_TIM2_config(void);
-void TIM2_calcul_ARR(void);
-
-
-void UART_config(void);
-void USART3_IRQHandler(void);
-
-void EXTI_Init(void);
-void EXTI2_IRQHandler(void);
-void EXTI3_IRQHandler(void);
-
-
-
-int main (void)
-{
-
-	config_gpio_pb();
-
-	UART_config(); 	USART3_IRQHandler();
-
-	EXTI_Init(); EXTI2_IRQHandler(); EXTI3_IRQHandler();
-	
-	TIM2_config(); IT_TIM2_config();
-
-	
-	
-	
-	while(1)
-	{
-		
-	}
-	return 0;
-}
-
-/*-----------------------------------------------------------------*/
-
-				
-
-/*-----------------------------------------------------------------*/
+#include "TP_STM32_biblio.h"
 
 void config_gpio_pb(void)
 {
@@ -120,10 +65,8 @@ void TIM2_config(void)
 void TIM2_calcul_ARR(void)
 {
     TIM2->ARR = (f_clk * (period_s/1000 )) / (TIM2->PSC + 1) - 1;
-    TIM2->EGR = TIM_EGR_UG; // force la mise à jour
+    TIM2->EGR = TIM_EGR_UG; // force la mise ï¿½ jour
 }
-
-
 
 /*-----------------------------------------------------------------*/
 
@@ -151,21 +94,22 @@ void TIM2_IRQHandler(void)
 
 	if (TIM2 ->SR & TIM_SR_UIF)
 	{
-		    TIM2->SR &=~TIM_SR_UIF; // mettre 0 sur le bit de debordement 
+		TIM2->SR &=~TIM_SR_UIF; // mettre 0 sur le bit de debordement 
 		
-        // Effacer l'ancien état des LEDs
+        // Effacer l'ancien ï¿½tat des LEDs
 		
-		    GPIOB->BSRR |= (15UL<< (12+16));
+	    GPIOB->BSRR |= (15UL<< (12+16));
 
         // Appliquer le nouveau Cycle sur PB12-PB15
         GPIOB->BSRR |= ((cycle[index_cycle]) << 12);
 
-        // Incrémenter l’index cycliquement
+        // Incrï¿½menter lï¿½index cycliquement
         index_cycle++;
-		        if (index_cycle >= length_cycle)
-				{
+
+		if (index_cycle >= length_cycle)
+		{
             index_cycle = 0;
-				}
+		}
 				
 	}
 
@@ -236,19 +180,22 @@ void USART3_IRQHandler(void)
 	// ISR et RXNE
     if(USART3->ISR & USART_ISR_RXNE)
     {
-        octet = (USART3->RDR);  // stocker donnée reçue dans variable octet
+        octet = (USART3->RDR);  // stocker donnï¿½e reï¿½ue dans variable octet
 
         if(index_recep == 0)
         {
-					//  stop le chenillard
-	          TIM2 ->CR1 &=~(TIM_CR1_CEN);
+			//  stop le chenillard
+
+	        TIM2 ->CR1 &=~(TIM_CR1_CEN);
+
             // Premier octet = longueur du cycle
+
             length_cycle = octet-48;
 
             if(length_cycle > N)
-						{
+			{
               length_cycle = N;
-						}
+			}
 				
 					
 
@@ -257,18 +204,18 @@ void USART3_IRQHandler(void)
         }
         else
         {
-            // Données du cycle
-            cycle[index_recep - 1] = octet;  // on commence à 0
+            // Donnï¿½es du cycle
+            cycle[index_recep - 1] = octet;  // on commence ï¿½ 0
             index_recep++;
 
             if(index_recep > length_cycle)
             {
                index_recep = 0;
-							index_cycle = 0;							
-							// signal qu'on a tout reçu
-							USART3->TDR = 1;           
-              // redémarre le timer pour le chenillard
-							 TIM2 ->CR1 |=TIM_CR1_CEN;
+			   index_cycle = 0;							
+				// signal qu'on a tout reï¿½u
+			   USART3->TDR = 1;           
+              // redï¿½marre le timer pour le chenillard
+			   TIM2 ->CR1 |=TIM_CR1_CEN;
 
             }
         }
@@ -284,15 +231,15 @@ void EXTI_Init(void)
 	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOCEN;   
 	
 	// Mettre PC2/PC3 en input (MODER = 00) et pull-up (PUPDR = 01)
-  GPIOC->MODER &= ~(3 << (2*2)); 
-	GPIOC->MODER &= ~(3 << (3*2));   
+    GPIOC->MODER &= ~(3 << (2*2)); 
+    GPIOC->MODER &= ~(3 << (3*2));   
 
 	
-  GPIOC->PUPDR &= ~(3 << (2*2)); 
+    GPIOC->PUPDR &= ~(3 << (2*2)); 
 	GPIOC->PUPDR &= ~(3 << (3*2));
 	
 	
-  GPIOC->PUPDR |=  (1 << (2*2));
+    GPIOC->PUPDR |=  (1 << (2*2));
 	GPIOC->PUPDR |= (1 << (3*2));    
 
 
@@ -307,25 +254,18 @@ void EXTI_Init(void)
 	//EXTI ->FTSR1 |=(1<<3);
 	EXTI ->FTSR1 |=	EXTI_FTSR1_FT3 ;
 	
-	
 	EXTI ->IMR1 |= EXTI_IMR1_IM2;
 	EXTI ->IMR1 |= EXTI_IMR1_IM3;
 
-	
 	NVIC_SetPriority(EXTI2_IRQn,2);
 	NVIC_SetPriority(EXTI3_IRQn,2);
 
-	
-  NVIC_EnableIRQ(EXTI2_IRQn);
-  NVIC_EnableIRQ(EXTI3_IRQn);
-	
-
+    NVIC_EnableIRQ(EXTI2_IRQn);
+    NVIC_EnableIRQ(EXTI3_IRQn);
 	
 }
 
 /*-----------------------------------------------------------------*/
-
-
 
 void EXTI2_IRQHandler(void) 
 	{
@@ -333,29 +273,28 @@ void EXTI2_IRQHandler(void)
 			{
         EXTI->PR1 = (1 << 2); // efface le flag proprement
 
-					if (period_s <= MAX_period_s) 
-					{
-            period_s *= 2;
-						
-						// mise a jour du ARR si je met a jour dans tim_init il ne peux pas rexecuter cette fonction on lexecute qu'une foi dans la fonction main
-						TIM2_calcul_ARR();
-          }
+		if (period_s <= MAX_period_s) 
+		{
+            period_s *= 2;			
+		    // mise a jour du ARR si je met a jour dans tim_init il ne peux pas rexecuter cette fonction on lexecute qu'une foi dans la fonction main
+			TIM2_calcul_ARR();
+        }
       }
   }
 
 void EXTI3_IRQHandler(void)
 {
-    // Vérifie que le flag d'interruption est bien positionné pour EXTI3
+    // Vï¿½rifie que le flag d'interruption est bien positionnï¿½ pour EXTI3
     if (EXTI->PR1 & (1 << 3))
     {
         EXTI->PR1 = (1 << 3); // Efface le flag
 				
-        // Divise la période si elle est supérieure à la limite min
-					if (period_s >= MIN_period_s)
-					{
+        // Divise la pï¿½riode si elle est supï¿½rieure ï¿½ la limite min
+		if (period_s >= MIN_period_s)
+		{
             period_s /= 2;
-						TIM2_calcul_ARR();				
-					}
+		    TIM2_calcul_ARR();				
+		}
 				
     }
 }
