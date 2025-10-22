@@ -8,9 +8,9 @@ uint32_t f_clk = 4000000;
 
 volatile uint8_t length_cycle = 8;
 volatile uint8_t octet = 0;
-volatile float period_s = 0.24;
-volatile float  MAX_period_s = 1.0;
-volatile float MIN_period_s =0.06;
+volatile uint16_t period_s = 240;
+volatile uint16_t MAX_period_s = 960;
+volatile uint16_t MIN_period_s =60;
 
 void config_gpio_pb(void);
 
@@ -119,7 +119,7 @@ void TIM2_config(void)
 
 void TIM2_calcul_ARR(void)
 {
-    TIM2->ARR = (f_clk * period_s ) / (TIM2->PSC + 1) - 1;
+    TIM2->ARR = (f_clk * (period_s/1000 )) / (TIM2->PSC + 1) - 1;
     TIM2->EGR = TIM_EGR_UG; // force la mise à jour
 }
 
